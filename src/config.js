@@ -1,17 +1,19 @@
 const packageJson = require('../package.json');
 
 const config = {
-  version: packageJson.version,
-  name: packageJson.name,
-  description: packageJson.description,
+  appVersion: packageJson.version,
 
   nodeEnv: process.env.NODE_ENV ?? 'development',
-  port: process.env.PORT ?? 3000,
 
-  clientOrigins: {
-    test: process.env.DEV_ORIGIN ?? '*',
-    development: process.env.DEV_ORIGIN ?? '*',
-    production: process.env.PROD_ORIGIN ?? 'none'
+  api: {
+    host: process.env.API_HOST || 'localhost',
+    port: process.env.API_PORT || 8080
+  },
+
+  redisServer: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT,
+    db: process.env.REDIS_DB || 0
   }
 };
 

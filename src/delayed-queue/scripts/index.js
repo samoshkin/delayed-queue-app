@@ -7,9 +7,15 @@ const scriptsDir = path.join(__dirname);
 const scripts = loadLuaScripts(scriptsDir);
 
 function loadLuaScripts(dir) {
-  return fs.readdirSync(path.join(__dirname, './scripts'), { withFileTypes: true })
+  return fs.readdirSync(dir, { withFileTypes: true })
     .filter(entry => entry.isFile() && path.extname(entry.name) === '.lua')
-    .map(file => [file.name, fs.readFileSync(file.path)]);
+    .map(file => {
+      const filePath = path.join(file.path, file.name);
+      return [
+        path.parse(filePath).name, // only file name without extension
+        fs.readFileSync(filePath, 'utf-8')
+      ];
+    });
 }
 
 /**
@@ -22,8 +28,8 @@ function loadLuaScripts(dir) {
  * @param {Object} redis - 'ioredis' Redis instance
  */
 function installLuaScripts(redis) {
-  for (const [fileName, fileContents] of scripts) {
-    redis.defineCommand(camelCase(fileName), { lua: fileContents });
+  for (const [name, contents] of scripts) {
+    redis.defineCommand(camelCase(name), { lua: contents });
   }
 }
 

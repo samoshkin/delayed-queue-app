@@ -15,7 +15,7 @@ function createDelayedQueue(options) {
     connectTimeout: 5000,
     commandTimeout: 5000,
     // namespace all queue-related data structures
-    keyPrefix: 'delayed-queue',
+    keyPrefix: 'delayed-queue:',
 
     // user-provided options
     ...redisOptions,
@@ -36,7 +36,7 @@ function createDelayedQueue(options) {
 
   async function scheduleJob(jobPayload, dueTime) {
     if (dueTime <= toUnixTimestamp(Date.now())) {
-      throw new Error(`Job's due time '${dueTime}' must be in future. Current time: '${toUnixTimestamp(Date.now())}'`);
+      throw new Error(`Job due time must be in future. Due time: '${dueTime}'`);
     }
 
     const jobId = nextJobId();
@@ -66,8 +66,8 @@ function createDelayedQueue(options) {
     });
   }
 
-  function close() {
-    return redis.quit();
+  async function close() {
+    await redis.quit();
   }
 
   return {

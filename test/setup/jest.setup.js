@@ -1,10 +1,13 @@
 const dotenv = require('dotenv');
 const { once } = require('events');
 const { Redis } = require('ioredis');
+const timestamp = require('unix-timestamp');
 
 dotenv.config({ path: '.env.test' });
 
-jest.setTimeout(300000);
+jest.setTimeout(10000);
+
+timestamp.round = true;
 
 // connect to Redis instance before each individual test
 // ensure clean database by flushing all data

@@ -60,5 +60,6 @@ function toUnixTimestamp(ms) {
 
 module.exports = {
   createTimer,
-  toUnixTimestamp
+  toUnixTimestamp,
+  delay
 };

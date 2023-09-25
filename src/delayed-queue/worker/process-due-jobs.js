@@ -12,6 +12,8 @@ const noop = () => {};
  * @param {number} options.jobProcessingTimeout - maximum time allowed for job handler to work
  * before job is nacked and processing gets cancelled
  * @param {Function} options.jobHandler - processing logic for the job
+ * @param {Function} options.maxJobsToProcess - maximum number of jobs to process from queue before exit
+ * by default there's no limit on max jobs to process
  * @param {Function} [options.onJobError] - called when job processing encounters error while processing particular job
  * @param {Function} [options.onJobTimeout] - called when job processing hits the 'jobProcessingTimeout'
  */
@@ -20,8 +22,10 @@ const processDueJobs = options => {
     redis,
     jobProcessingTimeout,
     jobHandler,
+    maxJobsToProcess = Infinity,
     onJobTimeout = noop,
-    onJobError = noop
+    onJobError = noop,
+    onJobProcessed = noop
   } = options;
 
   // separate connection for blocking calls when listening to 'dueJobs' List
@@ -38,14 +42,19 @@ const processDueJobs = options => {
     redis2 = redis.duplicate();
     cancelSignal.addEventListener('abort', () => {
       redis2.disconnect();
-    });
+    }, { once: true });
 
     // NOTE: fetching jobs 1 by 1 for simplicity
     // TODO: prefetch multiple jobs
     let job = null;
+    let jobCount = 0;
     while ((job = await fetchJob())) {
       await processJob(job, cancelSignal);
+      onJobProcessed(job);
       cancelSignal.throwIfAborted();
+      if (++jobCount >= maxJobsToProcess) {
+        return;
+      }
     }
   }
 
@@ -96,29 +105,31 @@ const processDueJobs = options => {
 
   async function processJob(job, cancelSignal) {
     const timeout = AbortSignal.timeout(jobProcessingTimeout);
-    const signal = AbortSignal.any(cancelSignal, timeout);
+    const signal = AbortSignal.any([cancelSignal, timeout]);
 
     try {
-      await Promise.race(
+      await Promise.race([
         jobHandler(job, {
           ack: ack.bind(null, job.id),
           nack: nack.bind(null, job.id),
           signal
         }),
         signalToPromise(signal)
-      );
+      ]);
+      await ack(job.id);
     } catch (err) {
       // on error, return job back to the "due jobs" list
       await nack(job.id);
 
-      if (timeout.aborted) {
-        onJobTimeout(job.id);
-      }
-
       // if not an AbortError, then it's a job handler error (user code)
       // don't fail the whole Worker, just report to the user code
       if (!AbortError.isAbortError(err)) {
-        onJobError(job.id, err);
+        onJobError(err);
+        return;
+      }
+
+      if (timeout.aborted) {
+        onJobTimeout(job.id);
       }
     }
   }

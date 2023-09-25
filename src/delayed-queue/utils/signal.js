@@ -35,7 +35,10 @@ function signalToPromise(signal) {
       return reject(new AbortError());
     }
 
-    signal.addEventListener('abort', () => { reject(new AbortError()); });
+    signal.addEventListener(
+      'abort',
+      () => { reject(new AbortError()); },
+      { once: true });
   });
 }
 

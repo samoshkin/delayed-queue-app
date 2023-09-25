@@ -36,6 +36,9 @@ const processDueJobs = options => {
    */
   async function start(cancelSignal) {
     redis2 = redis.duplicate();
+    cancelSignal.addEventListener('abort', () => {
+      redis2.disconnect();
+    });
 
     // NOTE: fetching jobs 1 by 1 for simplicity
     // TODO: prefetch multiple jobs
@@ -106,7 +109,7 @@ const processDueJobs = options => {
       );
     } catch (err) {
       // on error, return job back to the "due jobs" list
-      nack(job.id);
+      await nack(job.id);
 
       if (timeout.aborted) {
         onJobTimeout(job.id);

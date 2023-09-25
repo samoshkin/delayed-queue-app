@@ -91,53 +91,20 @@ class Worker extends EventEmitter {
   run() {
     assert(this.status === Worker.Status.Idle, 'Can call run() only once for just created Worker');
 
-    const {
-      jobProcessingTimeout,
-      moveDueJobsInterval,
-      maxDueJobsToMove,
-      maxUnackedJobAge,
-      monitorUnackedJobsInterval
-    } = this.#options;
-    const redis = this.#redis;
-    const runTask = this.#runTask.bind(this);
+    this.status = Worker.Status.Running;
 
-    runTask(processDueJobs({
-      redis,
-      jobProcessingTimeout,
-      jobHandler: this.#jobHandler,
-      onJobTimeout: (evt) => {
-        this.emit('jobTimeout', evt);
-      },
-      onJobError: (evt) => {
-        this.emit('jobError', evt);
-      }
-    }));
+    this.#processDueJobs();
 
+    // extra queue maintenance activities if run as Leader
     if (this.role === Worker.Role.Leader) {
-      runTask(moveDueJobs({
-        redis,
-        moveDueJobsInterval,
-        maxDueJobsToMove,
-        onTick: () => {
-          // internal logging
-        }
-      }));
-      runTask(monitorUnackedJobs({
-        redis,
-        maxUnackedJobAge,
-        monitorInterval: monitorUnackedJobsInterval,
-        onTick: () => {
-          // internal logging
-        }
-      }));
+      this.#moveDueJobs();
+      this.#monitorUnackedJobs();
     }
 
     Promise.allSettled(this.#tasks).then(() => {
       this.status = Worker.Status.Closed;
       this.emit('close');
     });
-
-    this.status = Worker.Status.Running;
   }
 
   /**
@@ -172,6 +139,42 @@ class Worker extends EventEmitter {
         this.emit('error', err);
       }
     });
+  }
+
+  #processDueJobs() {
+    this.#runTask(processDueJobs({
+      redis: this.#redis,
+      jobProcessingTimeout: this.#options.jobProcessingTimeout,
+      jobHandler: this.#jobHandler,
+      onJobTimeout: (evt) => {
+        this.emit('jobTimeout', evt);
+      },
+      onJobError: (evt) => {
+        this.emit('jobError', evt);
+      }
+    }));
+  }
+
+  #monitorUnackedJobs() {
+    this.#runTask(monitorUnackedJobs({
+      redis: this.#redis,
+      maxUnackedJobAge: this.#options.maxUnackedJobAge,
+      monitorInterval: this.#options.monitorUnackedJobsInterval,
+      onTick: () => {
+        // internal logging
+      }
+    }));
+  }
+
+  #moveDueJobs() {
+    this.#runTask(moveDueJobs({
+      redis: this.#redis,
+      moveDueJobsInterval: this.#options.moveDueJobsInterval,
+      maxDueJobsToMove: this.#options.maxDueJobsToMove,
+      onTick: () => {
+        // internal logging
+      }
+    }));
   }
 }
 

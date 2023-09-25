@@ -1,8 +1,4 @@
-const packageJson = require('../package.json');
-
-const config = {
-  appVersion: packageJson.version,
-
+module.exports = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
 
   api: {
@@ -16,5 +12,3 @@ const config = {
     db: process.env.REDIS_DB || 0
   }
 };
-
-module.exports = config;

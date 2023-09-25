@@ -10,7 +10,7 @@ local jobId = ARGV[1]
 -- remove job from unackedJobs List
 local removed = redis.call('LREM', unackedJobsKey, 1, jobId)
 
--- if successfully removed, add it back to dueJobs list
+-- if successfully removed, add it back to 'dueJobs' list
 if removed > 0 then
     redis.call('LPUSH', dueJobsKey, jobId)
 end

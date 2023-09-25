@@ -3,12 +3,10 @@ const config = require('./config');
 const createDelayedQueue = require('./delayed-queue');
 
 const queue = createDelayedQueue({ redisOptions: config.redisServer });
-const worker = queue.createWorker(true, jobHandler);
-worker.run();
-
-function jobHandler(job) {
+const worker = queue.createWorker(true, (job) => {
   console.log(`${job.id} : ${job.payload}`);
-}
+});
+worker.run();
 
 // graceful shutdown
 onExit((code, signal) => {

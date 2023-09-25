@@ -17,6 +17,12 @@ const server = app.listen(port, host, () => {
   console.log(`🚀 Listening at http://${host}:${port}/`);
 });
 
+async function onScheduleJobHandler(req, res) {
+  const { payload, dueTime } = req.body;
+  const jobId = await queue.scheduleJob(payload, dueTime);
+  res.json({ jobId });
+}
+
 // graceful shutdown
 onExit((code, signal) => {
   // no cleanup for failure-related exit => fail fast
@@ -36,12 +42,6 @@ onExit((code, signal) => {
 
   return true;
 });
-
-async function onScheduleJobHandler(req, res) {
-  const { payload, dueTime } = req.body;
-  const jobId = await queue.scheduleJob(payload, dueTime);
-  res.json({ jobId });
-}
 
 function errorHandler(err, _req, res, _next) {
   console.error(err);

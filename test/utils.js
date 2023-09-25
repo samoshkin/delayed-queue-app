@@ -1,3 +1,5 @@
+const ulid = require('ulid');
+
 function parseZRangeResponse(response) {
   return Array.from(splitInPairs(response)).map(([item, score]) => [item, Number(score)]);
 }
@@ -8,7 +10,12 @@ function * splitInPairs(array) {
   }
 }
 
+function generateJobId() {
+  return ulid.ulid().toLowerCase();
+}
+
 module.exports = {
   splitInPairs,
-  parseZRangeResponse
+  parseZRangeResponse,
+  generateJobId
 };

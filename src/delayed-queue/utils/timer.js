@@ -1,4 +1,4 @@
-const { setTimeout: setTimeoutPromise } = require('node:timers/promises');
+const { AbortError } = require('./signal');
 
 /**
  * Creates a timer generator that yields a current time at given interval
@@ -9,17 +9,43 @@ const { setTimeout: setTimeoutPromise } = require('node:timers/promises');
  * @param {AbortSignal} [options.signal] - cancellation signal to abort timer operation
  */
 async function * createTimer(interval, { signal, runFirstTickImmediately = true } = {}) {
-  const delay = (ms) => setTimeoutPromise(ms, null, { signal });
   let tickCount = 0;
 
   if (!runFirstTickImmediately) {
-    await delay(interval);
+    await delay(interval, signal);
   }
 
   while (true) {
     yield { time: Date.now(), count: tickCount++ };
-    await delay(interval);
+    await delay(interval, signal);
   }
+}
+
+/**
+ * setTimeout() as a Promise with cancellation support
+ *
+ * @param {*} ms -- interval of delay (in milliseconds)
+ * @param {*} signal -- cancellation signal
+ * @returns - Promise that resolves when delay elapses
+ */
+async function delay(ms, signal) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      if (signal) {
+        signal.removeEventListener('abort', onAborted);
+      }
+      resolve();
+    }, ms);
+
+    const onAborted = () => {
+      clearTimeout(timer);
+      reject(new AbortError());
+    };
+
+    if (signal) {
+      signal.addEventListener('abort', onAborted, { once: true });
+    }
+  });
 }
 
 /**

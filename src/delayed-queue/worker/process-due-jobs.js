@@ -97,11 +97,23 @@ const processDueJobs = options => {
       try {
         // take job from 'dueJobs' List and atomically move it to 'unackedJobs' List
         // if no items in 'dueJobs' List block the connection up for 5 seconds
+        // don't block indefinitely so we can check
+        // if cancellation was requested at least once per 5s
         jobId = await redis2.blmove(keys.dueJobs, keys.unackedJobs, 'RIGHT', 'LEFT', 5);
-        // TODO: check why jobId can be null here?
+
+        // Pitfall: doc says that BLMOVE should return null upon timeout,
+        // but sometimed it throws 'Command timed out' error, and sometimes returns null
+        // so cover both cases
+        if (jobId == null) {
+          // check if cancellation is requested at least once per 5s
+          signal.throwIfAborted();
+          continue;
+        }
+
+        // we've got next job from queue, break out of the loop
         break;
       } catch (err) {
-        // check if cancellation is requested at least once per 5s
+        // check if cancellation is requested
         signal.throwIfAborted();
 
         // if no items received after timeout, resend next blmove() command

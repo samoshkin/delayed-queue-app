@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  redis:
+    image: redis:${REDIS_VERSION}
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    command: redis-server --loglevel warning
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: delayed-queue-app:latest
+    env_file: .env.local
+    ports:
+      - "${API_PORT}:${API_PORT}"
+    command: ["./src/server.js"]
+    depends_on:
+      - redis
+
+  worker-leader:
+    image: delayed-queue-app:latest
+    env_file: .env.local
+    environment:
+      - WORKER_ROLE=leader
+    command: ["./src/worker.js"]
+    depends_on:
+      - redis
+
+  worker-follower:
+    image: delayed-queue-app:latest
+    env_file: .env.local
+    command: ["./src/worker.js"]
+    depends_on:
+      - redis

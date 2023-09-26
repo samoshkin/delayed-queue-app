@@ -3,7 +3,6 @@ dist
 
 # dotenv environment variable files
 .env
-.env.local
 
 # tmp and .logs
 tmp

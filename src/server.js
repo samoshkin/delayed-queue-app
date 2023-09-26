@@ -26,8 +26,7 @@ onExit((code, signal) => {
 
     await setTimeoutPromise(1000);
 
-    // kill ourselves respecting signal and exit code = signal + 128
-    process.kill(process.pid, signal);
+    process.exit(1);
   })();
 
   return true;

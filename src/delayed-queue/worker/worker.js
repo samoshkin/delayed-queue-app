@@ -98,10 +98,10 @@ class Worker extends EventEmitter {
     // extra queue maintenance activities if run as Leader
     if (this.role === Worker.Role.Leader) {
       this.#moveDueJobs();
-      this.#monitorUnackedJobs();
+      // this.#monitorUnackedJobs();
     }
 
-    Promise.allSettled(this.#tasks).then(() => {
+    return Promise.allSettled(this.#tasks).then(() => {
       this.status = Worker.Status.Closed;
       this.emit('close');
     });
@@ -148,6 +148,9 @@ class Worker extends EventEmitter {
       jobHandler: this.#jobHandler,
       onJobTimeout: (evt) => {
         this.emit('jobTimeout', evt);
+      },
+      onJobProcessed: (evt) => {
+        this.emit('jobProcessed', evt);
       },
       onJobError: (evt) => {
         this.emit('jobError', evt);

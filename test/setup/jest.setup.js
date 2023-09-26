@@ -2,8 +2,11 @@ const dotenv = require('dotenv');
 const { once } = require('events');
 const { Redis } = require('ioredis');
 const timestamp = require('unix-timestamp');
+const extraJestMatchers = require('jest-extended');
 
 dotenv.config({ path: '.env.test' });
+
+expect.extend(extraJestMatchers);
 
 jest.setTimeout(10000);
 

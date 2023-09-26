@@ -5,7 +5,7 @@ module.exports = services => {
 
   const app = express();
   app.use(express.json());
-  app.post('/', onScheduleJobHandler);
+  app.post('/', withErrorHandler(onScheduleJobHandler));
   app.use(notFoundHandler);
   app.use(errorHandler);
 
@@ -23,6 +23,12 @@ module.exports = services => {
   function notFoundHandler(_req, res) {
     return res.status(404).json({ message: 'not found' });
   };
+
+  function withErrorHandler(handler) {
+    return (req, res, next) => {
+      return handler(req, res, next).catch(next);
+    };
+  }
 
   return app;
 };

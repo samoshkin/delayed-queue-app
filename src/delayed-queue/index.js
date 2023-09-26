@@ -21,10 +21,11 @@ function createDelayedQueue(options) {
     ...redisOptions,
 
     // reconnect automatically when connection is lost
-    // but don't reconnect on error
+    // but don't reconnect on Redis errors
     autoResubscribe: true,
     autoResendUnfulfilledCommands: true,
-    reconnectOnError: false
+    reconnectOnError: false,
+    maxRetriesPerRequest: 5
   });
 
   // install custom Lua scripts
@@ -51,13 +52,12 @@ function createDelayedQueue(options) {
     return jobId;
   }
 
-  function createWorker(isLeader, jobHandler, options = {}) {
+  function createWorker(role, jobHandler, options = {}) {
     const {
       jobProcessingTimeout = 5000
     } = options;
-    const role = isLeader ? Worker.Role.Leader : Worker.Role.Follower;
 
-    return new Worker(role, jobHandler, redis, {
+    return new Worker(role || Worker.Role.Follower, jobHandler, redis, {
       jobProcessingTimeout,
       moveDueJobsInterval: 1000,
       maxDueJobsToMove: 500,

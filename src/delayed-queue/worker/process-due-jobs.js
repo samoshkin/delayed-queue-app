@@ -16,6 +16,7 @@ const noop = () => {};
  * by default there's no limit on max jobs to process
  * @param {Function} [options.onJobError] - called when job processing encounters error while processing particular job
  * @param {Function} [options.onJobTimeout] - called when job processing hits the 'jobProcessingTimeout'
+ * @param {Function} [options.onJobProcessed] - called after each job has been processed
  */
 const processDueJobs = options => {
   const {
@@ -39,6 +40,7 @@ const processDueJobs = options => {
    * @returns {Promise} it's neverending Promise, which however fails on error or when cancelled from the outside
    */
   async function start(cancelSignal) {
+    // create separate connection for blocking calls
     redis2 = redis.duplicate();
     cancelSignal.addEventListener('abort', () => {
       redis2.disconnect();
@@ -48,7 +50,7 @@ const processDueJobs = options => {
     // TODO: prefetch multiple jobs
     let job = null;
     let jobCount = 0;
-    while ((job = await fetchJob())) {
+    while ((job = await fetchJob(cancelSignal))) {
       await processJob(job, cancelSignal);
       onJobProcessed(job);
       cancelSignal.throwIfAborted();
@@ -88,10 +90,28 @@ const processDueJobs = options => {
    * Updates the 'job.pickupTime'
    * @returns {Object} job
    */
-  async function fetchJob() {
-    // take job from 'dueJobs' List and atomically move it to 'unackedJobs' List
-    // if no items in 'dueJobs' List block the connection (similar to BLPOPRPUSH semantic)
-    const jobId = await redis2.blmove(keys.dueJobs, keys.unackedJobs, 'RIGHT', 'LEFT', 0);
+  async function fetchJob(signal) {
+    let jobId = null;
+
+    while (true) {
+      try {
+        // take job from 'dueJobs' List and atomically move it to 'unackedJobs' List
+        // if no items in 'dueJobs' List block the connection up for 5 seconds
+        jobId = await redis2.blmove(keys.dueJobs, keys.unackedJobs, 'RIGHT', 'LEFT', 5);
+        // TODO: check why jobId can be null here?
+        break;
+      } catch (err) {
+        // check if cancellation is requested at least once per 5s
+        signal.throwIfAborted();
+
+        // if no items received after timeout, resend next blmove() command
+        if (err.message === 'Command timed out') {
+          continue;
+        }
+
+        throw err;
+      }
+    }
 
     // update 'job.pickupTime=current_time'
     // this is used later to detect if job stays in 'unackedJobs' List for too long

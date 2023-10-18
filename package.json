@@ -10,7 +10,7 @@
     "start": "docker-compose --env-file .env.local up --build --scale worker-follower=2 --abort-on-container-exit --force-recreate",
     "stop": "docker-compose --env-file .env.local down",
     "submit-jobs": "cross-env DOTENV_CONFIG_PATH=.env.local node -r dotenv/config ./test/submit-jobs.js",
-    "test": "jest --config test/jest.config.js --detectOpenHandles --runInBand",
+    "test": "cross-env DOTENV_CONFIG_PATH=.env.test node -r dotenv/config node_modules/.bin/jest --detectOpenHandles",
     "lint": "eslint ./"
   },
   "engines": {

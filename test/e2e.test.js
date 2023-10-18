@@ -14,10 +14,7 @@ jest.setTimeout(12000);
 
 beforeEach(async() => {
   queue = createDelayedQueue({
-    redisOptions: {
-      host: process.env.REDIS_HOST,
-      port: process.env.REDIS_PORT
-    }
+    redisOptions: global.__redisConnOptions__
   });
   now = timestamp.now();
   server = api({ queue });

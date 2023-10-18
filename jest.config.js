@@ -9,16 +9,15 @@ const config = {
   // Indicates whether the coverage information should be collected while executing the test
   collectCoverage: false,
 
-  // The root directory that Jest should scan for tests and modules within
-  rootDir: '.',
-
   // Indicates whether each individual test should be reported during the run
   verbose: true,
 
   // setup the whole test suite and per-test-file test environment
-  globalSetup: '<rootDir>/setup/global-setup.js',
-  globalTeardown: '<rootDir>/setup/global-teardown.js',
-  setupFilesAfterEnv: ['<rootDir>/setup/jest.setup.js']
+  // globalSetup: '<rootDir>/test/setup/global-setup.js',
+  // globalTeardown: '<rootDir>/test/setup/global-teardown.js',
+  testEnvironment: '<rootDir>/test/setup/environment.js',
+  setupFiles: ['dotenv/config'],
+  setupFilesAfterEnv: ['<rootDir>/test/setup/jest.setup.js']
 
   // Automatically clear mock calls, instances, contexts and results before every test
   // clearMocks: true,
@@ -73,9 +72,6 @@ const config = {
 
   // A set of global variables that need to be available in all test environments
   // globals: {},
-
-  // The maximum amount of workers used to run your tests. Can be specified as % or a number. E.g. maxWorkers: 10% will use 10% of your CPU amount + 1 as the maximum worker number. maxWorkers: 2 will use a maximum of 2 workers.
-  // maxWorkers: "50%",
 
   // An array of directory names to be searched recursively up from the requiring module's location
   // moduleDirectories: [

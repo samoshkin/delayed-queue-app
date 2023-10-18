@@ -16,10 +16,7 @@ beforeEach(async() => {
   cancelController = new AbortController();
   signal = cancelController.signal;
   queue = createDelayedQueue({
-    redisOptions: {
-      host: process.env.REDIS_HOST,
-      port: process.env.REDIS_PORT
-    }
+    redisOptions: global.__redisConnOptions__
   });
   now = timestamp.now();
 });

@@ -10,10 +10,7 @@ let redis = null;
 beforeEach(async() => {
   redis = global.redis;
   queue = createDelayedQueue({
-    redisOptions: {
-      host: process.env.REDIS_HOST,
-      port: process.env.REDIS_PORT
-    }
+    redisOptions: global.__redisConnOptions__
   });
 });
 

@@ -1,10 +1,7 @@
-const dotenv = require('dotenv');
 const { once } = require('events');
 const { Redis } = require('ioredis');
 const timestamp = require('unix-timestamp');
 const extraJestMatchers = require('jest-extended');
-
-dotenv.config({ path: '.env.test' });
 
 expect.extend(extraJestMatchers);
 
@@ -17,9 +14,9 @@ timestamp.round = true;
 // provide Redis connection as 'global.redis' in test files
 beforeEach(async() => {
   const redis = global.redis = new Redis({
-    port: process.env.REDIS_PORT,
-    host: process.env.REDIS_HOST
+    ...globalThis.__redisConnOptions__
   });
+
   await once(redis, 'connect');
   await redis.flushall();
 });
